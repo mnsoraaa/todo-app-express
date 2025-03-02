@@ -1,5 +1,5 @@
 import express from "express"
-import { z } from "zod"
+import createNewUserSchema from "./requests/CreateNewUserSchema.js";
 
 const app = express();
 app.use(express.json());
@@ -25,16 +25,6 @@ const validateUserId = (request, response, next) => {
     
     next();
 }
-
-// validate user schema
-const createUserSchema = z.object({
-    name: z.string({
-        required_error: "Name is required",
-        invalid_type_error: "Name must be a string",
-      })
-      .min(3)
-      .max(255)
-});
 
 app.use(loggingMiddleware);
 
@@ -79,7 +69,7 @@ app.post('/api/users/:id', validateUserId, (request, response) => {
 app.post('/api/users', (request, response) => {
     try {
         // validate request body againts schema
-        const validateCreateUserBody = createUserSchema.parse(request.body);
+        const validateCreateUserBody = createNewUserSchema.parse(request.body);
 
         users.push({ id: users.length + 1, ...validateCreateUserBody });
 

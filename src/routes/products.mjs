@@ -1,5 +1,5 @@
 import { Router } from "express";
-import createNewProductSchema from "../requests/createNewProductScema.js";
+import createNewProductRequest from "../requests/createNewProductRequest.js";
 
 const router = Router();
 
@@ -33,7 +33,7 @@ router.get('/api/products/:id', (request, response) => {
 // Create a new product
 router.post('/api/products', (request, response) => {
     try {
-        const validateCreateProductBody = createNewProductSchema.parse(request.body);
+        const validateCreateProductBody = createNewProductRequest.parse(request.body);
 
         products.push({ id: products.length + 1, ...validateCreateProductBody });
     

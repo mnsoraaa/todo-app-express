@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import createNewUserSchema from '../requests/createNewUserSchema.js';
+import createNewUserRequest from '../requests/createNewUserRequest.js';
 
 const router = Router();
 

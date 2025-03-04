@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import createNewUserRequest from '../requests/createNewUserRequest.js';
+import pool from '../databases/database.mjs';
+import bcrypt from 'bcrypt';
 
 const router = Router();
 
@@ -12,56 +14,60 @@ let users = [
 const validateUserId = (request, response, next) => {
     const { params: { id } } = request;
 
-    if (isNaN(parseInt(id))) return response.status(422).send({"message": "Invalid id"});
+    if (isNaN(parseInt(id))) response.status(422).json({"message": "Invalid id"});
     
     next();
 }
 
 // Get all users
-router.get('/api/users', (request, response) => {
-    const { query: { filter, value } } = request;
+router.get('/api/users', async (request, response) => {
+    try {
+        const { query: { filter, value } } = request;
     
-    if (filter && value) {
+        if (filter && value) {
 
-        let filteredusers = users.filter((user) => user[filter].includes(value));
+            const filteredusers = pool.query("SELECT * FROM users WHERE ?? = ?", [filter, value]);
 
-        return response.send(filteredusers);
+            response.json(filteredusers);
 
+        }
+
+        const users = await pool.query("SELECT * FROM users");
+        
+        response.json(users);
+    } catch (error) {
+        
     }
-    
-    return response.send(users);
+
+    response.status(400).json({"message": "Unable to find users"});
 });
 
 // Get user by id
-router.get('/api/users/:id', validateUserId, (request, response) => {
-    let user = users.find((user) => user.id == request.params.id);
+router.get('/api/users/:id', validateUserId, async (request, response) => {
+    try {
+        const id = parseInt(request.params.id);
 
-    if (! user) return response.status(404).send({"message": "User not found"});
+        const user = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
 
-    return response.send(user);
-});
-
-// Get user by id
-router.post('/api/users/:id', validateUserId, (request, response) => {
-    let user = users.find((user) => user.id == request.params.id);
-
-    const id = parseInt(request.params.id);
-
-    return response.send(user);
+        response.status(200).json(user);
+    } catch (error) {
+        
+    }
+    response.status(400).json({"message": "Unable to find user"});
 });
 
 // Create a new user
-router.post('/api/users', (request, response) => {
+router.post('/api/users', async (request, response) => {
     try {
-        // validate request body againts schema
-        const validateCreateUserBody = createNewUserSchema.parse(request.body);
+        // validate request
+        const validatedCreateUserRequest = createNewUserRequest.parse(request.body);
 
-        users.push({ id: users.length + 1, ...validateCreateUserBody });
+        const result = await pool.query("INSERT INTO users (email, first_name, last_name, password) VALUES (?,?,?,?)", [validatedCreateUserRequest.email, validatedCreateUserRequest.first_name, validatedCreateUserRequest.last_name, await bcrypt.hash(validatedCreateUserRequest.password, 10)]);
 
-        return response.status(201).send(users);
+        response.status(201).json({user_id: Number(result.insertId)});
     } catch (error) {
         // if validation fails, respond with error message
-        return response.status(400).send({"message": error.errors[0].message});
+        response.status(400).json({"message": error});
     }
 });
 
@@ -71,11 +77,11 @@ router.put('/api/users/:id', validateUserId, (request, response) => {
 
     let user = users.find((user) => user.id == id);
 
-    if (! user) return response.status(404).send({"message": "User not found"});
+    if (! user) response.status(404).json({"message": "User not found"});
 
     user.name = body.name;
 
-    return response.send(user);
+    response.status(200).json(user);
 });
 
 // Delete a user
@@ -83,11 +89,11 @@ router.delete('/api/users/:id', validateUserId, (request, response) => {
     const { params: { id } } = request;
     const userIndex = users.findIndex((user) => user.id == id);
 
-    if (userIndex === -1) return response.status(404).send({"message": "User not found"});
+    if (userIndex === -1) response.status(404).json({"message": "User not found"});
 
     users = users.splice(userIndex, 1);
 
-    return response.status(200).send();
+    response.status(200);
 });
 
 export default router;

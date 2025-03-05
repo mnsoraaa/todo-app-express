@@ -3,6 +3,9 @@ import createNewUserRequest from '../requests/createNewUserRequest.js';
 import pool from '../databases/database.mjs';
 import bcrypt from 'bcrypt';
 
+import eventEmitter from '../events/event.mjs';
+import '../events/users/userRegisteredEvent.mjs';
+
 const router = Router();
 
 let users = [
@@ -63,6 +66,8 @@ router.post('/api/users', async (request, response) => {
         const validatedCreateUserRequest = createNewUserRequest.parse(request.body);
 
         const result = await pool.query("INSERT INTO users (email, first_name, last_name, password) VALUES (?,?,?,?)", [validatedCreateUserRequest.email, validatedCreateUserRequest.first_name, validatedCreateUserRequest.last_name, await bcrypt.hash(validatedCreateUserRequest.password, 10)]);
+
+        eventEmitter.emit('event:userRegistered', {user_id: Number(result.insertId)});
 
         response.status(201).json({user_id: Number(result.insertId)});
     } catch (error) {

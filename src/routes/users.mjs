@@ -25,11 +25,11 @@ const validateUserId = (request, response, next) => {
 // Get all users
 router.get('/api/users', async (request, response) => {
     try {
-        const { query: { filter, value } } = request;
+        const { query: { search } } = request;
     
-        if (filter && value) {
+        if (search) {
 
-            const filteredusers = pool.query("SELECT * FROM users WHERE ?? = ?", [filter, value]);
+            const filteredusers = pool.query("SELECT * FROM users WHERE first_name LIKE '?' OR WHERE last_name LIKE '?'", [search, search]);
 
             response.json(filteredusers);
 
@@ -37,12 +37,12 @@ router.get('/api/users', async (request, response) => {
 
         const users = await pool.query("SELECT * FROM users");
         
-        response.json(users);
+        return response.json(users);
     } catch (error) {
-        
+        console.log(error);
     }
 
-    response.status(400).json({"message": "Unable to find users"});
+    return response.status(400).json({"message": "Unable to find users"});
 });
 
 // Get user by id
@@ -52,11 +52,11 @@ router.get('/api/users/:id', validateUserId, async (request, response) => {
 
         const user = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
 
-        response.status(200).json(user);
+        return response.status(200).json(user);
     } catch (error) {
-        
+        console.log(error);
     }
-    response.status(400).json({"message": "Unable to find user"});
+    return response.status(400).json({"message": "Unable to find user"});
 });
 
 // Create a new user
@@ -69,36 +69,44 @@ router.post('/api/users', async (request, response) => {
 
         eventEmitter.emit('event:userRegistered', {user_id: Number(result.insertId)});
 
-        response.status(201).json({user_id: Number(result.insertId)});
+        return response.status(201).json({user_id: Number(result.insertId)});
     } catch (error) {
-        // if validation fails, respond with error message
-        response.status(400).json({"message": error});
+        console.log(error);
     }
+    // if validation fails, respond with error message
+    return response.status(503).json({"message": "Service unavailable"});
 });
 
 // Update user by id
-router.put('/api/users/:id', validateUserId, (request, response) => {
-    const { params: { id }, body } = request;
+router.put('/api/users/:id', validateUserId, async (request, response) => {
+    try {
+        const { params: { id }, body } = request;
 
-    let user = users.find((user) => user.id == id);
+        let user = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
 
-    if (! user) response.status(404).json({"message": "User not found"});
+        if (! user) response.status(404).json({"message": "User not found"});
 
-    user.name = body.name;
+        await pool.query("UPDATE users SET first_name = ?, last_name = ? WHERE id = ?", [body.first_name, body.last_name, id]);
 
-    response.status(200).json(user);
+        return response.status(200).json({"message": "Successfully update user."});
+    } catch (error) {
+        console.log(error);
+    }
+    return response.status(503).json({"message": "Service unavailable"});
 });
 
 // Delete a user
-router.delete('/api/users/:id', validateUserId, (request, response) => {
-    const { params: { id } } = request;
-    const userIndex = users.findIndex((user) => user.id == id);
+router.delete('/api/users/:id', validateUserId, async (request, response) => {
+    try {
+        const { params: { id } } = request;
+        
+        await pool.query("DELETE FROM users WHERE id = ?", [id]);
 
-    if (userIndex === -1) response.status(404).json({"message": "User not found"});
-
-    users = users.splice(userIndex, 1);
-
-    response.status(200);
+        return response.status(200).json({"message": "Successfully deleted user."});
+    } catch (error) {
+        console.log(error);
+    }
+    return response.status(503).json({"message": "Service unavailable"});
 });
 
 export default router;

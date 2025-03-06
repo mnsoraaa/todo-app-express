@@ -1,5 +1,5 @@
 import { Router } from "express";
-import createNewProductRequest from "../requests/createNewProductRequest.js";
+import createNewProductRequest from "../requests/createNewProductRequest.mjs";
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import createNewUserRequest from '../requests/createNewUserRequest.js';
+import createNewUserRequest from '../requests/createNewUserRequest.mjs';
 import pool from '../databases/database.mjs';
 import bcrypt from 'bcrypt';
 

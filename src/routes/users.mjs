@@ -9,11 +9,6 @@ import '../events/users/userRegisteredEvent.mjs';
 
 const router = Router();
 
-let users = [
-    { id: 1, name: "John", age: 20 },
-    { id: 2, name: "Wock", age: 25 },
-];
-
 // middleware to validate user id
 const validateUserId = (request, response, next) => {
     const { params: { id } } = request;

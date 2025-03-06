@@ -39,9 +39,13 @@ router.post('/api/products', (request, response) => {
     
         return response.send(products);
     } catch (error) {
-        // if validation fails, respond with error message
-        return response.status(400).send({"message": error.errors[0].message});
+        if (error instanceof z.ZodError) {
+            return response.status(400).json({ "message": error.errors[0].message });
+        }
+
+        console.log(error);
     }   
+    return response.status(503).json({ "message": "Service unavailable" });
 });
 
 // Update a product

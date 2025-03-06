@@ -2,6 +2,7 @@ import { Router } from 'express';
 import createNewUserRequest from '../requests/createNewUserRequest.mjs';
 import pool from '../databases/database.mjs';
 import bcrypt from 'bcrypt';
+import { z } from 'zod';
 
 import eventEmitter from '../events/event.mjs';
 import '../events/users/userRegisteredEvent.mjs';
@@ -71,6 +72,10 @@ router.post('/api/users', async (request, response) => {
 
         return response.status(201).json({user_id: Number(result.insertId)});
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return response.status(400).json({ "message": error.errors[0].message });
+        }
+
         console.log(error);
     }
     // if validation fails, respond with error message

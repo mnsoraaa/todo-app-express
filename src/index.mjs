@@ -1,6 +1,6 @@
 import express from "express";
 import routes from "./routes/base.mjs";
-import loggingMiddleware from "./middlewares/loggingMiddleware.js";
+import loggingMiddleware from "./middlewares/loggingMiddleware.mjs";
 
 const app = express();
 app.use(express.json());

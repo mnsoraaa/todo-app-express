@@ -12,16 +12,18 @@ router.post('/api/login', async (request, response) => {
     try {
         const validateLoginRequest = loginUserRequest.parse(request.body);
 
-        const user = await pool.query("SELECT email FROM users WHERE email = ?", [validateLoginRequest.email]);
+        const user = await pool.query("SELECT email, password FROM users WHERE email = ?", [validateLoginRequest.email]);
 
-        if (bcrypt.compare(validateLoginRequest.password, user.password)) {
+        if (! user) return response.status(404).json({ "message": "User not found" });
 
+        const passwordMatch = await bcrypt.compare(validateLoginRequest.password, user[0].password);
+
+        if (passwordMatch) {  
             const token = jwt.sign({ "id": Number(user.id), "email": user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
             return response.cookie("token", token, { httpOnly: true }).json({ "message": "Logged in" });
-
         }
-        
+
         return response.status(401).json({ "message": "Invalid credentials" });
     } catch (error) {
         if (error instanceof z.ZodError) {
